@@ -11,9 +11,13 @@
 - 菜单栏里的详细状态
 - 桌面小组件里的简洁状态
 
-![桌面小组件](assets/screenshots/widgets.png)
+<p align="center">
+  <img src="assets/screenshots/widgets.png" alt="桌面小组件" width="720">
+</p>
 
-![菜单栏下拉详情](assets/screenshots/menu-panel.png)
+<p align="center">
+  <img src="assets/screenshots/menu-panel.png" alt="菜单栏下拉详情" width="520">
+</p>
 
 ## 下载安装
 
