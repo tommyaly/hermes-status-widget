@@ -5,6 +5,7 @@ struct HermesStatusPanelView: View {
     @Environment(\.refreshHermesStatus) private var refresh
     @Environment(\.quitHermesStatusWidget) private var quit
     @State private var showingSettings = false
+    private let menuModelLimit = 5
 
     var body: some View {
         let snapshot = store.snapshot
@@ -18,16 +19,22 @@ struct HermesStatusPanelView: View {
                 settingsSection()
                 Spacer(minLength: 0)
             } else {
-                vibeCodingSection(snapshot.vibeCoding)
-                agentSection(snapshot)
-                usageSection(snapshot.tokenUsage)
-                sectionSeparator()
-                cumulativeSection(snapshot.allTimeTokenUsage)
-                footer(snapshot)
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 14) {
+                        vibeCodingSection(snapshot.vibeCoding)
+                        agentSection(snapshot)
+                        usageSection(snapshot.tokenUsage)
+                        sectionSeparator()
+                        cumulativeSection(snapshot.allTimeTokenUsage)
+                        footer(snapshot)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .topLeading)
+                }
+                .scrollIndicators(.visible)
             }
         }
         .padding(18)
-        .frame(width: 400, height: 500, alignment: .topLeading)
+        .frame(width: 440, height: 680, alignment: .topLeading)
         .background(.regularMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         .overlay(
@@ -176,7 +183,7 @@ struct HermesStatusPanelView: View {
                 }
 
                 VStack(spacing: 6) {
-                    ForEach(usage.byModel.prefix(3)) { row in
+                    ForEach(usage.byModel.prefix(menuModelLimit)) { row in
                         VStack(alignment: .leading, spacing: 3) {
                             HStack(spacing: 8) {
                                 Text(row.model)
@@ -218,7 +225,7 @@ struct HermesStatusPanelView: View {
                 metric("命中率", formatCacheHitRate(usage.cacheHitRate))
             }
 
-            ForEach(usage.byModel.prefix(5)) { row in
+            ForEach(usage.byModel.prefix(menuModelLimit)) { row in
                 VStack(alignment: .leading, spacing: 3) {
                     HStack(spacing: 8) {
                         Text(row.model)

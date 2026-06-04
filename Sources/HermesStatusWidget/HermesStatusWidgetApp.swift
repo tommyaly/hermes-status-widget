@@ -71,7 +71,7 @@ final class AppController: NSObject, NSApplicationDelegate {
         popover.contentViewController = hosting
         popover.behavior = .applicationDefined
         popover.animates = true
-        popover.contentSize = NSSize(width: 400, height: 500)
+        popover.contentSize = NSSize(width: 440, height: 680)
 
         self.popover = popover
     }
