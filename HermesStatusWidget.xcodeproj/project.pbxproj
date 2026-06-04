@@ -1,0 +1,356 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		000000000000000000000101 /* HermesStatusWidgetApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000201 /* HermesStatusWidgetApp.swift */; };
+		000000000000000000000102 /* HermesStatusPanelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000202 /* HermesStatusPanelView.swift */; };
+		000000000000000000000103 /* HermesLaunchGuideView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000203 /* HermesLaunchGuideView.swift */; };
+		000000000000000000000104 /* LocalHermesStatusReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000204 /* LocalHermesStatusReader.swift */; };
+		000000000000000000000105 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000205 /* Models.swift */; };
+		000000000000000000000106 /* StatusStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000206 /* StatusStore.swift */; };
+		000000000000000000000107 /* WidgetSnapshotStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000207 /* WidgetSnapshotStore.swift */; };
+		000000000000000000000108 /* HermesAgentStatusWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000208 /* HermesAgentStatusWidget.swift */; };
+		000000000000000000000109 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000205 /* Models.swift */; };
+		000000000000000000000110 /* WidgetSnapshotStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000207 /* WidgetSnapshotStore.swift */; };
+		000000000000000000000111 /* HermesStatusWidgetExtension.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 000000000000000000000302 /* HermesStatusWidgetExtension.appex */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		000000000000000000000120 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 000000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 000000000000000000000402;
+			remoteInfo = HermesStatusWidgetExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		000000000000000000000130 /* Embed App Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				000000000000000000000111 /* HermesStatusWidgetExtension.appex in Embed App Extensions */,
+			);
+			name = "Embed App Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		000000000000000000000201 /* HermesStatusWidgetApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/HermesStatusWidget/HermesStatusWidgetApp.swift; sourceTree = "<group>"; };
+		000000000000000000000202 /* HermesStatusPanelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/HermesStatusWidget/HermesStatusPanelView.swift; sourceTree = "<group>"; };
+		000000000000000000000203 /* HermesLaunchGuideView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/HermesStatusWidget/HermesLaunchGuideView.swift; sourceTree = "<group>"; };
+		000000000000000000000204 /* LocalHermesStatusReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/HermesStatusWidget/LocalHermesStatusReader.swift; sourceTree = "<group>"; };
+		000000000000000000000205 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/HermesStatusWidget/Models.swift; sourceTree = "<group>"; };
+		000000000000000000000206 /* StatusStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/HermesStatusWidget/StatusStore.swift; sourceTree = "<group>"; };
+		000000000000000000000207 /* WidgetSnapshotStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/HermesStatusWidget/WidgetSnapshotStore.swift; sourceTree = "<group>"; };
+		000000000000000000000208 /* HermesAgentStatusWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Widget/HermesAgentStatusWidget.swift; sourceTree = "<group>"; };
+		000000000000000000000209 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Resources/Info.plist; sourceTree = "<group>"; };
+		000000000000000000000210 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Widget/Info.plist; sourceTree = "<group>"; };
+		000000000000000000000211 /* HermesStatusWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Widget/HermesStatusWidgetExtension.entitlements; sourceTree = "<group>"; };
+		000000000000000000000301 /* Hermes Status Widget.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Hermes Status Widget.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		000000000000000000000302 /* HermesStatusWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = HermesStatusWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		000000000000000000000010 = {
+			isa = PBXGroup;
+			children = (
+				000000000000000000000020 /* App Sources */,
+				000000000000000000000021 /* Widget */,
+				000000000000000000000022 /* Resources */,
+				000000000000000000000023 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		000000000000000000000020 /* App Sources */ = {
+			isa = PBXGroup;
+			children = (
+				000000000000000000000201 /* HermesStatusWidgetApp.swift */,
+				000000000000000000000202 /* HermesStatusPanelView.swift */,
+				000000000000000000000203 /* HermesLaunchGuideView.swift */,
+				000000000000000000000204 /* LocalHermesStatusReader.swift */,
+				000000000000000000000205 /* Models.swift */,
+				000000000000000000000206 /* StatusStore.swift */,
+				000000000000000000000207 /* WidgetSnapshotStore.swift */,
+			);
+			name = "App Sources";
+			sourceTree = "<group>";
+		};
+		000000000000000000000021 /* Widget */ = {
+			isa = PBXGroup;
+			children = (
+				000000000000000000000208 /* HermesAgentStatusWidget.swift */,
+				000000000000000000000210 /* Info.plist */,
+				000000000000000000000211 /* HermesStatusWidgetExtension.entitlements */,
+			);
+			name = Widget;
+			sourceTree = "<group>";
+		};
+		000000000000000000000022 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				000000000000000000000209 /* Info.plist */,
+			);
+			name = Resources;
+			sourceTree = "<group>";
+		};
+		000000000000000000000023 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				000000000000000000000301 /* Hermes Status Widget.app */,
+				000000000000000000000302 /* HermesStatusWidgetExtension.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		000000000000000000000401 /* HermesStatusWidget */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 000000000000000000000501 /* Build configuration list for PBXNativeTarget "HermesStatusWidget" */;
+			buildPhases = (
+				000000000000000000000601 /* Sources */,
+				000000000000000000000602 /* Frameworks */,
+				000000000000000000000603 /* Resources */,
+				000000000000000000000130 /* Embed App Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				000000000000000000000121 /* PBXTargetDependency */,
+			);
+			name = HermesStatusWidget;
+			productName = "Hermes Status Widget";
+			productReference = 000000000000000000000301 /* Hermes Status Widget.app */;
+			productType = "com.apple.product-type.application";
+		};
+		000000000000000000000402 /* HermesStatusWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 000000000000000000000502 /* Build configuration list for PBXNativeTarget "HermesStatusWidgetExtension" */;
+			buildPhases = (
+				000000000000000000000604 /* Sources */,
+				000000000000000000000605 /* Frameworks */,
+				000000000000000000000606 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = HermesStatusWidgetExtension;
+			productName = HermesStatusWidgetExtension;
+			productReference = 000000000000000000000302 /* HermesStatusWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		000000000000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2650;
+				LastUpgradeCheck = 2650;
+				TargetAttributes = {
+					000000000000000000000401 = {
+						CreatedOnToolsVersion = 26.5;
+					};
+					000000000000000000000402 = {
+						CreatedOnToolsVersion = 26.5;
+					};
+				};
+			};
+			buildConfigurationList = 000000000000000000000500 /* Build configuration list for PBXProject "HermesStatusWidget" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 000000000000000000000010;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 000000000000000000000023 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				000000000000000000000401 /* HermesStatusWidget */,
+				000000000000000000000402 /* HermesStatusWidgetExtension */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		000000000000000000000603 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		000000000000000000000606 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		000000000000000000000601 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				000000000000000000000101 /* HermesStatusWidgetApp.swift in Sources */,
+				000000000000000000000102 /* HermesStatusPanelView.swift in Sources */,
+				000000000000000000000103 /* HermesLaunchGuideView.swift in Sources */,
+				000000000000000000000104 /* LocalHermesStatusReader.swift in Sources */,
+				000000000000000000000105 /* Models.swift in Sources */,
+				000000000000000000000106 /* StatusStore.swift in Sources */,
+				000000000000000000000107 /* WidgetSnapshotStore.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		000000000000000000000604 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				000000000000000000000108 /* HermesAgentStatusWidget.swift in Sources */,
+				000000000000000000000109 /* Models.swift in Sources */,
+				000000000000000000000110 /* WidgetSnapshotStore.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		000000000000000000000602 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		000000000000000000000605 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		000000000000000000000121 /* PBXTargetDependency */ = {isa = PBXTargetDependency; target = 000000000000000000000402 /* HermesStatusWidgetExtension */; targetProxy = 000000000000000000000120 /* PBXContainerItemProxy */; };
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		000000000000000000000701 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		000000000000000000000702 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		000000000000000000000703 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = "";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @executable_path/../PlugIns";
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = local.hermes.statuswidget;
+				PRODUCT_NAME = "Hermes Status Widget";
+				SKIP_INSTALL = NO;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		000000000000000000000704 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = "";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @executable_path/../PlugIns";
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = local.hermes.statuswidget;
+				PRODUCT_NAME = "Hermes Status Widget";
+				SKIP_INSTALL = NO;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		000000000000000000000705 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_ENTITLEMENTS = Widget/HermesStatusWidgetExtension.entitlements;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_APP_SANDBOX = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Widget/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @executable_path/../../../../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = local.hermes.statuswidget.widget;
+				PRODUCT_NAME = HermesStatusWidgetExtension;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		000000000000000000000706 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_ENTITLEMENTS = Widget/HermesStatusWidgetExtension.entitlements;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_APP_SANDBOX = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Widget/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @executable_path/../../../../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = local.hermes.statuswidget.widget;
+				PRODUCT_NAME = HermesStatusWidgetExtension;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		000000000000000000000500 /* Build configuration list for PBXProject "HermesStatusWidget" */ = {isa = XCConfigurationList; buildConfigurations = (000000000000000000000701 /* Debug */, 000000000000000000000702 /* Release */, ); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		000000000000000000000501 /* Build configuration list for PBXNativeTarget "HermesStatusWidget" */ = {isa = XCConfigurationList; buildConfigurations = (000000000000000000000703 /* Debug */, 000000000000000000000704 /* Release */, ); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		000000000000000000000502 /* Build configuration list for PBXNativeTarget "HermesStatusWidgetExtension" */ = {isa = XCConfigurationList; buildConfigurations = (000000000000000000000705 /* Debug */, 000000000000000000000706 /* Release */, ); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+/* End XCConfigurationList section */
+	};
+	rootObject = 000000000000000000000001 /* Project object */;
+}

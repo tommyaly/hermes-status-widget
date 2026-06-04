@@ -18,6 +18,7 @@ struct HermesStatusPanelView: View {
                 settingsSection()
                 Spacer(minLength: 0)
             } else {
+                vibeCodingSection(snapshot.vibeCoding)
                 agentSection(snapshot)
                 usageSection(snapshot.tokenUsage)
                 sectionSeparator()
@@ -53,12 +54,22 @@ struct HermesStatusPanelView: View {
             Spacer()
 
             VStack(alignment: .trailing, spacing: 2) {
-                Button(action: { self.showingSettings.toggle() }) {
-                    Image(systemName: showingSettings ? "chevron.left" : "gearshape")
-                        .frame(width: 24, height: 24)
+                HStack(spacing: 8) {
+                    Button(action: { self.showingSettings.toggle() }) {
+                        Image(systemName: showingSettings ? "chevron.left" : "gearshape")
+                            .frame(width: 24, height: 24)
+                    }
+                    .buttonStyle(.plain)
+                    .help(showingSettings ? "返回状态" : "设置")
+
+                    Button(action: quit) {
+                        Image(systemName: "power")
+                            .foregroundStyle(.red)
+                            .frame(width: 24, height: 24)
+                    }
+                    .buttonStyle(.plain)
+                    .help("退出 Hermes 状态小组件")
                 }
-                .buttonStyle(.plain)
-                .help(showingSettings ? "返回状态" : "设置")
 
                 if !showingSettings {
                     Text(formatBytes(snapshot.memory.rssBytes))
@@ -66,6 +77,40 @@ struct HermesStatusPanelView: View {
                         .foregroundStyle(.secondary)
                 }
             }
+        }
+    }
+
+    private func vibeCodingSection(_ vibe: VibeCodingSnapshot) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Label("Agent 服务时长", systemImage: "clock.badge.checkmark")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Text(formatDuration(vibe.todaySeconds))
+                    .font(.system(size: 15, weight: .semibold, design: .monospaced))
+            }
+
+            GeometryReader { proxy in
+                ZStack(alignment: .leading) {
+                    RoundedRectangle(cornerRadius: 4, style: .continuous)
+                        .fill(.secondary.opacity(0.16))
+                    RoundedRectangle(cornerRadius: 4, style: .continuous)
+                        .fill(LinearGradient(colors: [.green, .cyan], startPoint: .leading, endPoint: .trailing))
+                        .frame(width: max(4, proxy.size.width * CGFloat(vibe.dayRatio)))
+                }
+            }
+            .frame(height: 8)
+
+            HStack(spacing: 10) {
+                Text("占 24 小时 \(formatPercent(vibe.dayRatio))")
+                Text("\(vibe.sessionCount) 个会话")
+                if vibe.activeSessionCount > 0 {
+                    Text("进行中 \(formatDuration(vibe.activeSessionSeconds))")
+                }
+            }
+            .font(.system(size: 11))
+            .foregroundStyle(.secondary)
         }
     }
 
@@ -280,7 +325,7 @@ struct HermesStatusPanelView: View {
                 Button(action: quit) {
                     Label("退出", systemImage: "power")
                 }
-                .buttonStyle(.borderless)
+                .buttonStyle(.bordered)
             }
         }
     }
@@ -333,6 +378,19 @@ struct HermesStatusPanelView: View {
     private func formatCacheHitRate(_ value: Double?) -> String {
         guard let value else { return "--" }
         return String(format: "%.1f%%", value * 100)
+    }
+
+    private func formatPercent(_ value: Double) -> String {
+        String(format: "%.1f%%", value * 100)
+    }
+
+    private func formatDuration(_ seconds: Int) -> String {
+        let hours = seconds / 3600
+        let minutes = (seconds % 3600) / 60
+        if hours > 0 {
+            return "\(hours)小时\(minutes)分"
+        }
+        return "\(minutes)分"
     }
 
     private func relativeTime(_ date: Date) -> String {

@@ -21,14 +21,16 @@ final class AppController: NSObject, NSApplicationDelegate {
     private let store = StatusStore()
     private var statusItem: NSStatusItem?
     private var popover: NSPopover?
+    private var launchWindow: NSWindow?
     private var timer: Timer?
 
     func start() {
         setupStatusItem()
         setupPopover()
+        setupLaunchGuide()
         refresh()
 
-        timer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in
+        timer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 self?.refresh()
             }
@@ -74,6 +76,33 @@ final class AppController: NSObject, NSApplicationDelegate {
         self.popover = popover
     }
 
+    private func setupLaunchGuide() {
+        let rootView = HermesLaunchGuideView()
+            .environment(\.closeHermesLaunchGuide, { [weak self] in
+                Task { @MainActor in
+                    self?.launchWindow?.close()
+                }
+            })
+
+        let hosting = NSHostingController(rootView: rootView)
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 420, height: 300),
+            styleMask: [.titled, .closable, .fullSizeContentView],
+            backing: .buffered,
+            defer: false
+        )
+        window.title = "Hermes 状态小组件"
+        window.contentViewController = hosting
+        window.center()
+        window.isReleasedWhenClosed = false
+        window.titlebarAppearsTransparent = true
+        window.titleVisibility = .hidden
+        window.makeKeyAndOrderFront(nil)
+        NSApplication.shared.activate()
+
+        launchWindow = window
+    }
+
     @objc private func togglePopover() {
         guard let button = statusItem?.button, let popover else { return }
         if popover.isShown {
@@ -95,18 +124,7 @@ final class AppController: NSObject, NSApplicationDelegate {
     private func updateStatusItemTitle() {
         let snapshot = store.snapshot
         let status = snapshot.gateway.isRunning ? "运行中" : "离线"
-        let tokens = formatMenuTokenCount(snapshot.tokenUsage.total)
-        statusItem?.button?.title = " Hermes \(status) · \(tokens)"
-    }
-
-    private func formatMenuTokenCount(_ value: Int) -> String {
-        if value >= 1_000_000 {
-            return String(format: "%.1fM", Double(value) / 1_000_000)
-        }
-        if value >= 1_000 {
-            return String(format: "%.1fK", Double(value) / 1_000)
-        }
-        return "\(value)"
+        statusItem?.button?.title = " \(status)"
     }
 }
 
@@ -115,6 +133,10 @@ private struct RefreshHermesStatusKey: EnvironmentKey {
 }
 
 private struct QuitHermesStatusWidgetKey: EnvironmentKey {
+    static let defaultValue: @Sendable () -> Void = {}
+}
+
+private struct CloseHermesLaunchGuideKey: EnvironmentKey {
     static let defaultValue: @Sendable () -> Void = {}
 }
 
@@ -127,5 +149,10 @@ extension EnvironmentValues {
     var quitHermesStatusWidget: @Sendable () -> Void {
         get { self[QuitHermesStatusWidgetKey.self] }
         set { self[QuitHermesStatusWidgetKey.self] = newValue }
+    }
+
+    var closeHermesLaunchGuide: @Sendable () -> Void {
+        get { self[CloseHermesLaunchGuideKey.self] }
+        set { self[CloseHermesLaunchGuideKey.self] = newValue }
     }
 }

@@ -1,10 +1,11 @@
 import Foundation
 
-struct HermesSnapshot: Equatable {
+struct HermesSnapshot: Codable, Equatable {
     var gateway: GatewaySnapshot
     var activeSession: SessionSnapshot?
     var tokenUsage: TokenUsageSnapshot
     var allTimeTokenUsage: TokenUsageSnapshot
+    var vibeCoding: VibeCodingSnapshot
     var memory: MemorySnapshot
     var refreshedAt: Date
     var error: String?
@@ -14,13 +15,14 @@ struct HermesSnapshot: Equatable {
         activeSession: nil,
         tokenUsage: .empty,
         allTimeTokenUsage: .empty,
+        vibeCoding: .empty,
         memory: .unknown,
         refreshedAt: Date(),
         error: nil
     )
 }
 
-struct GatewaySnapshot: Equatable {
+struct GatewaySnapshot: Codable, Equatable {
     var isRunning: Bool
     var state: String
     var pid: Int?
@@ -38,13 +40,13 @@ struct GatewaySnapshot: Equatable {
     )
 }
 
-struct PlatformSnapshot: Identifiable, Equatable {
+struct PlatformSnapshot: Codable, Identifiable, Equatable {
     var id: String { name }
     var name: String
     var state: String
 }
 
-struct SessionSnapshot: Equatable {
+struct SessionSnapshot: Codable, Equatable {
     var id: String
     var source: String
     var model: String
@@ -55,7 +57,7 @@ struct SessionSnapshot: Equatable {
     var outputTokens: Int
 }
 
-struct TokenUsageSnapshot: Equatable {
+struct TokenUsageSnapshot: Codable, Equatable {
     var total: Int
     var input: Int
     var output: Int
@@ -88,7 +90,7 @@ struct TokenUsageSnapshot: Equatable {
     )
 }
 
-struct ModelTokenUsage: Identifiable, Equatable {
+struct ModelTokenUsage: Codable, Identifiable, Equatable {
     var id: String { model }
     var model: String
     var input: Int
@@ -111,7 +113,25 @@ struct ModelTokenUsage: Identifiable, Equatable {
     }
 }
 
-struct MemorySnapshot: Equatable {
+struct VibeCodingSnapshot: Codable, Equatable {
+    var todaySeconds: Int
+    var activeSessionSeconds: Int
+    var sessionCount: Int
+    var activeSessionCount: Int
+
+    var dayRatio: Double {
+        min(1, max(0, Double(todaySeconds) / 86_400))
+    }
+
+    static let empty = VibeCodingSnapshot(
+        todaySeconds: 0,
+        activeSessionSeconds: 0,
+        sessionCount: 0,
+        activeSessionCount: 0
+    )
+}
+
+struct MemorySnapshot: Codable, Equatable {
     var rssBytes: Int?
 
     static let unknown = MemorySnapshot(rssBytes: nil)

@@ -4,16 +4,33 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 APP_NAME="Hermes Status Widget"
 APP_DIR="$ROOT/dist/$APP_NAME.app"
-EXECUTABLE="$ROOT/.build/debug/HermesStatusWidget"
+BUILT_APP="$ROOT/.xcode-derived/Build/Products/Debug/$APP_NAME.app"
 
 cd "$ROOT"
-swift build
+xcodebuild \
+  -project HermesStatusWidget.xcodeproj \
+  -scheme HermesStatusWidget \
+  -configuration Debug \
+  -derivedDataPath .xcode-derived \
+  build
 
 rm -rf "$APP_DIR"
-mkdir -p "$APP_DIR/Contents/MacOS" "$APP_DIR/Contents/Resources"
-cp "$EXECUTABLE" "$APP_DIR/Contents/MacOS/HermesStatusWidget"
-cp "$ROOT/Resources/Info.plist" "$APP_DIR/Contents/Info.plist"
+mkdir -p "$ROOT/dist"
+cp -R "$BUILT_APP" "$APP_DIR"
 
-chmod +x "$APP_DIR/Contents/MacOS/HermesStatusWidget"
+codesign \
+  --force \
+  --sign - \
+  --entitlements "$ROOT/Widget/HermesStatusWidgetExtension.entitlements" \
+  --timestamp=none \
+  --generate-entitlement-der \
+  "$APP_DIR/Contents/PlugIns/HermesStatusWidgetExtension.appex"
+
+codesign \
+  --force \
+  --sign - \
+  -o runtime \
+  --timestamp=none \
+  "$APP_DIR"
 
 echo "$APP_DIR"

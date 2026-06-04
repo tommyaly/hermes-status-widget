@@ -1,5 +1,8 @@
 import Foundation
 import Observation
+#if canImport(WidgetKit)
+import WidgetKit
+#endif
 
 @MainActor
 @Observable
@@ -17,11 +20,15 @@ final class StatusStore {
     func refresh() async {
         do {
             snapshot = try await reader.readSnapshot(cumulativeRange: cumulativeRange)
+            WidgetSnapshotStore.write(snapshot)
+            reloadWidgetTimelines()
         } catch {
             var next = HermesSnapshot.empty
             next.error = error.localizedDescription
             next.refreshedAt = Date()
             snapshot = next
+            WidgetSnapshotStore.write(next)
+            reloadWidgetTimelines()
         }
     }
 
@@ -31,6 +38,13 @@ final class StatusStore {
         Task {
             await refresh()
         }
+    }
+
+    private func reloadWidgetTimelines() {
+        #if canImport(WidgetKit)
+        WidgetCenter.shared.reloadTimelines(ofKind: "HermesAgentStatusWidget")
+        WidgetCenter.shared.reloadAllTimelines()
+        #endif
     }
 }
 

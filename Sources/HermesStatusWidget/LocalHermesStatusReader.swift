@@ -7,6 +7,7 @@ struct LocalHermesStatusReader: HermesStatusReading {
         let activeSession = readActiveSession(home: home)
         let tokenUsage = readTokenUsage(home: home, since: Date().addingTimeInterval(-86_400))
         let allTimeTokenUsage = readTokenUsage(home: home, since: cumulativeRange.since)
+        let vibeCoding = readVibeCoding(home: home)
         let memory = readMemory(pid: gateway.pid)
 
         return HermesSnapshot(
@@ -14,6 +15,7 @@ struct LocalHermesStatusReader: HermesStatusReading {
             activeSession: activeSession,
             tokenUsage: tokenUsage,
             allTimeTokenUsage: allTimeTokenUsage,
+            vibeCoding: vibeCoding,
             memory: memory,
             refreshedAt: Date(),
             error: nil
@@ -145,6 +147,103 @@ struct LocalHermesStatusReader: HermesStatusReading {
             cacheWrite: byModel.reduce(0) { $0 + $1.cacheWrite },
             reasoning: byModel.reduce(0) { $0 + $1.reasoning },
             byModel: byModel
+        )
+    }
+
+    private func readVibeCoding(home: URL) -> VibeCodingSnapshot {
+        let now = Date()
+        let calendar = Calendar.current
+        let dayStart = calendar.startOfDay(for: now)
+        let nowSeconds = now.timeIntervalSince1970
+        let dayStartSeconds = dayStart.timeIntervalSince1970
+
+        let query = """
+        SELECT s.id,
+               s.started_at,
+               COALESCE(s.ended_at, ''),
+               COALESCE(m.timestamp, '')
+        FROM sessions s
+        LEFT JOIN messages m ON m.session_id = s.id AND COALESCE(m.active, 1) = 1
+        WHERE s.started_at < ?
+          AND COALESCE(s.ended_at, m.timestamp, s.started_at) >= ?
+        ORDER BY s.id, m.timestamp;
+        """
+
+        let args = [
+            String(Int(nowSeconds)),
+            String(Int(dayStartSeconds))
+        ]
+        let rows = sqliteRows(home: home, query: query, arguments: args)
+        guard !rows.isEmpty else { return .empty }
+
+        struct SessionActivity {
+            var startedAt: TimeInterval
+            var endedAt: TimeInterval?
+            var messageTimes: [TimeInterval]
+        }
+
+        var sessions: [String: SessionActivity] = [:]
+        for row in rows where row.count >= 4 {
+            let id = row[0]
+            guard let startedAt = TimeInterval(row[1]) else { continue }
+            let endedAt = row[2].isEmpty ? nil : TimeInterval(row[2])
+            let messageTime = row[3].isEmpty ? nil : TimeInterval(row[3])
+
+            var activity = sessions[id] ?? SessionActivity(startedAt: startedAt, endedAt: endedAt, messageTimes: [])
+            activity.endedAt = activity.endedAt ?? endedAt
+            if let messageTime {
+                activity.messageTimes.append(messageTime)
+            }
+            sessions[id] = activity
+        }
+
+        let maxIdleGap: TimeInterval = 15 * 60
+        let singleMessageCredit: TimeInterval = 60
+        var todaySeconds = 0
+        var activeSeconds = 0
+        var sessionCount = 0
+        var activeSessionCount = 0
+
+        for activity in sessions.values {
+            let lastMessage = activity.messageTimes.max() ?? activity.startedAt
+            let isActive = activity.endedAt == nil && (nowSeconds - lastMessage) < 300
+            let rawEnd = activity.endedAt ?? (isActive ? nowSeconds : lastMessage)
+            let start = max(activity.startedAt, dayStartSeconds)
+            let end = min(rawEnd, nowSeconds)
+            guard end > start else { continue }
+
+            var points = activity.messageTimes
+                .filter { $0 >= start && $0 <= end }
+                .sorted()
+            points.insert(start, at: 0)
+            if points.last != end {
+                points.append(end)
+            }
+
+            let duration: TimeInterval
+            if points.count <= 2 && activity.messageTimes.isEmpty {
+                duration = min(end - start, singleMessageCredit)
+            } else {
+                duration = zip(points, points.dropFirst()).reduce(0) { total, pair in
+                    total + min(max(0, pair.1 - pair.0), maxIdleGap)
+                }
+            }
+
+            guard duration > 0 else { continue }
+            todaySeconds += Int(duration.rounded())
+            sessionCount += 1
+
+            if isActive {
+                activeSessionCount += 1
+                activeSeconds += Int(duration.rounded())
+            }
+        }
+
+        return VibeCodingSnapshot(
+            todaySeconds: todaySeconds,
+            activeSessionSeconds: activeSeconds,
+            sessionCount: sessionCount,
+            activeSessionCount: activeSessionCount
         )
     }
 
