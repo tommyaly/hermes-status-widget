@@ -48,3 +48,7 @@ open "/Applications/Hermes Status Widget.app"
 - Agent 服务时长按当天 Hermes 会话消息活动计算，长时间无消息的空档会被截断，避免把闲置时间算成 Agent 工作时间。
 - 主 App 每 30 秒刷新一次 Hermes 状态，并把快照同时写入主 App 支持目录和 Widget 扩展容器，避免桌面小组件读到空数据。
 - WidgetKit 由系统调度刷新，代码请求 30 秒刷新一次；需要立刻更新时看菜单栏下拉，或点击菜单栏里的“刷新”让主 App 立刻写入最新快照。
+
+## License
+
+MIT
