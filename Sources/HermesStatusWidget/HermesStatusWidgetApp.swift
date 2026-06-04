@@ -30,12 +30,13 @@ final class AppController: NSObject, NSApplicationDelegate {
         setupLaunchGuide()
         refresh()
 
-        timer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { [weak self] _ in
+        let refreshTimer = Timer(timeInterval: 30, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 self?.refresh()
             }
         }
-        RunLoop.main.add(timer!, forMode: .common)
+        timer = refreshTimer
+        RunLoop.main.add(refreshTimer, forMode: .common)
     }
 
     func applicationWillTerminate(_ notification: Notification) {

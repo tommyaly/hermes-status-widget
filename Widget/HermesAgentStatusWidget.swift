@@ -48,7 +48,7 @@ struct HermesWidgetView: View {
 
     var body: some View {
         let snapshot = entry.snapshot
-        let usage = snapshot.tokenUsage.total > 0 ? snapshot.tokenUsage : snapshot.allTimeTokenUsage
+        let usage = snapshot.tokenUsage
 
         switch family {
         case .systemSmall:
@@ -302,146 +302,11 @@ struct HermesWidgetView: View {
         }
     }
 
-    private func agentBlock(_ snapshot: HermesSnapshot) -> some View {
-        VStack(alignment: .leading, spacing: 5) {
-            Text("当前活跃 Agent")
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(.white.opacity(0.58))
-
-            if let session = snapshot.activeSession {
-                HStack(spacing: 8) {
-                    Text(session.title)
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(.white)
-                        .lineLimit(1)
-                    Spacer()
-                    Text(session.isLive ? "进行中" : "最近活跃")
-                        .font(.system(size: 9, weight: .medium))
-                        .foregroundStyle(.white.opacity(0.82))
-                }
-                HStack(spacing: 8) {
-                    Text(session.source)
-                    Text(session.model)
-                    Text("\(formatTokenCount(session.inputTokens + session.outputTokens)) token")
-                    Text(relativeTime(session.lastActive))
-                }
-                .font(.system(size: 10))
-                .foregroundStyle(.white.opacity(0.58))
-                .lineLimit(1)
-            } else {
-                Text(snapshot.gateway.activeAgents > 0 ? "\(snapshot.gateway.activeAgents) 个网关 agent 活跃" : "空闲")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.84))
-            }
-        }
-    }
-
-    private func widgetUsageBlock(_ title: String, _ usage: TokenUsageSnapshot, modelLimit: Int) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Text(title)
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.58))
-                Spacer()
-                Text(formatTokenCount(usage.total))
-                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                    .foregroundStyle(.white.opacity(0.78))
-            }
-
-            HStack(spacing: 10) {
-                widgetMetric("总量", formatTokenCount(usage.total))
-                widgetMetric("总量输入", formatTokenCount(usage.input))
-                widgetMetric("总量输出", formatTokenCount(usage.output))
-                widgetMetric("命中率", formatCacheHitRate(usage.cacheHitRate))
-            }
-
-            if usage.byModel.isEmpty {
-                Text("没有 token 记录")
-                    .font(.system(size: 10))
-                    .foregroundStyle(.white.opacity(0.52))
-            } else {
-                VStack(spacing: 5) {
-                    ForEach(usage.byModel.prefix(modelLimit)) { row in
-                        HStack(spacing: 8) {
-                            Text(row.model)
-                                .font(.system(size: 10, weight: .medium))
-                                .foregroundStyle(.white.opacity(0.80))
-                                .lineLimit(1)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                            Text(formatTokenCount(row.total))
-                                .frame(width: 46, alignment: .trailing)
-                            Text(formatTokenCount(row.input))
-                                .frame(width: 46, alignment: .trailing)
-                            Text(formatTokenCount(row.output))
-                                .frame(width: 42, alignment: .trailing)
-                            Text(formatCacheHitRate(row.cacheHitRate))
-                                .frame(width: 42, alignment: .trailing)
-                        }
-                        .font(.system(size: 10, design: .monospaced))
-                        .foregroundStyle(.white.opacity(0.64))
-                    }
-                }
-            }
-        }
-    }
-
-    private func separator(_ title: String) -> some View {
-        HStack(spacing: 8) {
-            Rectangle()
-                .fill(.white.opacity(0.18))
-                .frame(height: 1)
-            Text(title)
-                .font(.system(size: 9, weight: .medium))
-                .foregroundStyle(.white.opacity(0.54))
-                .fixedSize()
-            Rectangle()
-                .fill(.white.opacity(0.18))
-                .frame(height: 1)
-        }
-    }
-
-    private func platformLine(_ snapshot: HermesSnapshot) -> some View {
-        HStack {
-            if snapshot.gateway.platforms.isEmpty {
-                Text("暂无平台状态")
-            } else {
-                Text(snapshot.gateway.platforms.map { "\($0.name): \(stateLabel($0.state))" }.joined(separator: "  "))
-                    .lineLimit(1)
-            }
-            Spacer()
-        }
-        .font(.system(size: 9))
-        .foregroundStyle(.white.opacity(0.48))
-    }
-
     private func statusDot(_ snapshot: HermesSnapshot) -> some View {
         Circle()
             .fill(snapshot.gateway.isRunning ? Color.green : Color.gray)
             .frame(width: 11, height: 11)
             .shadow(color: snapshot.gateway.isRunning ? .green.opacity(0.75) : .clear, radius: 5)
-    }
-
-    private func ring(_ value: Double?) -> some View {
-        let percent = max(0, min(1, value ?? 0))
-        return ZStack {
-            Circle().stroke(.white.opacity(0.14), lineWidth: 8)
-            Circle()
-                .trim(from: 0, to: percent)
-                .stroke(
-                    AngularGradient(colors: [.green, .cyan, .green], center: .center),
-                    style: StrokeStyle(lineWidth: 8, lineCap: .round)
-                )
-                .rotationEffect(.degrees(-90))
-            VStack(spacing: 1) {
-                Text(formatCacheHitRate(value))
-                    .font(.system(size: 15, weight: .semibold, design: .monospaced))
-                    .foregroundStyle(.white)
-                Text("命中")
-                    .font(.system(size: 9))
-                    .foregroundStyle(.white.opacity(0.62))
-            }
-        }
-        .frame(width: 82, height: 82)
     }
 
     private func vibeRing(_ vibe: VibeCodingSnapshot, size: CGFloat = 82, lineWidth: CGFloat = 8) -> some View {

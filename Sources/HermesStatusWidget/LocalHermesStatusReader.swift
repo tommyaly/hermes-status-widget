@@ -59,9 +59,12 @@ struct LocalHermesStatusReader: HermesStatusReading {
 
         var pid = pidFromState
         if pid == nil,
-           let data = try? Data(contentsOf: pidURL),
-           let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
-            pid = object["pid"] as? Int
+           let data = try? Data(contentsOf: pidURL) {
+            if let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                pid = object["pid"] as? Int
+            } else if let text = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) {
+                pid = Int(text)
+            }
         }
 
         let running = pid.map(isProcessRunning(pid:)) ?? false
@@ -124,7 +127,6 @@ struct LocalHermesStatusReader: HermesStatusReading {
                + COALESCE(SUM(cache_read_tokens), 0)
                + COALESCE(SUM(cache_write_tokens), 0)
                + COALESCE(SUM(reasoning_tokens), 0) DESC
-        LIMIT 5;
         """
         let args = since.map { [String(Int($0.timeIntervalSince1970))] } ?? []
         let rows = sqliteRows(home: home, query: query, arguments: args)
