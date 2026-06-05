@@ -23,7 +23,7 @@
 ## 下载安装
 
 1. 打开右侧或下方的 **Releases**。
-2. 下载 `Hermes-Status-Widget-0.4.1.pkg`。
+2. 下载 `Hermes-Status-Widget-0.4.2.pkg`。
 3. 双击安装。
 4. 打开“应用程序”里的 **Hermes Status Widget**。
 5. 菜单栏会出现 Hermes 状态；也可以在 macOS 小组件里搜索 **Hermes 状态**，添加到桌面。
