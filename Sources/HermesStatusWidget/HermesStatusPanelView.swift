@@ -122,40 +122,60 @@ struct HermesStatusPanelView: View {
     }
 
     private func agentSection(_ snapshot: HermesSnapshot) -> some View {
-        VStack(alignment: .leading, spacing: 7) {
-            Label("当前活跃 Agent", systemImage: "person.wave.2")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(.secondary)
+        let sessions = Array(snapshot.activeSessions.prefix(3))
 
-            if let session = snapshot.activeSession {
-                HStack(spacing: 8) {
-                    Text(session.title)
-                        .font(.system(size: 15, weight: .semibold))
-                        .lineLimit(1)
-                    Spacer()
-                    Text(session.isLive ? "进行中" : "最近活跃")
-                        .font(.system(size: 10, weight: .medium))
-                        .padding(.horizontal, 7)
-                        .padding(.vertical, 3)
-                        .background(session.isLive ? Color.green.opacity(0.16) : Color.secondary.opacity(0.14))
-                        .clipShape(Capsule())
+        return VStack(alignment: .leading, spacing: 7) {
+            HStack {
+                Label("当前活跃 Agent", systemImage: "person.wave.2")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                Spacer()
+                if !sessions.isEmpty {
+                    Text("最多 3 个")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.secondary)
                 }
-                HStack(spacing: 8) {
-                    Text(session.source)
-                    Text(session.model)
-                    Text("\(formatTokenCount(session.inputTokens + session.outputTokens)) token")
-                    Text(relativeTime(session.lastActive))
-                }
-                .font(.system(size: 11))
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-            } else {
+            }
+
+            if sessions.isEmpty {
                 Text("空闲")
                     .font(.system(size: 15, weight: .medium))
-                Text(snapshot.gateway.activeAgents > 0 ? "\(snapshot.gateway.activeAgents) 个网关 agent 活跃" : "最近 5 分钟没有活跃 session")
+                Text(snapshot.gateway.activeAgents > 0 ? "\(snapshot.gateway.activeAgents) 个网关 agent 活跃" : "近 24 小时没有有效 session")
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
+            } else {
+                VStack(alignment: .leading, spacing: 8) {
+                    ForEach(sessions) { session in
+                        agentSessionRow(session)
+                    }
+                }
             }
+        }
+    }
+
+    private func agentSessionRow(_ session: SessionSnapshot) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            HStack(spacing: 8) {
+                Text(session.title)
+                    .font(.system(size: 15, weight: .semibold))
+                    .lineLimit(1)
+                Spacer()
+                Text(session.isLive ? "进行中" : "最近活跃")
+                    .font(.system(size: 10, weight: .medium))
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 3)
+                    .background(session.isLive ? Color.green.opacity(0.16) : Color.secondary.opacity(0.14))
+                    .clipShape(Capsule())
+            }
+            HStack(spacing: 8) {
+                Text(session.source)
+                Text(session.model)
+                Text("\(formatTokenCount(session.inputTokens + session.outputTokens)) token")
+                Text(relativeTime(session.lastActive))
+            }
+            .font(.system(size: 11))
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
         }
     }
 

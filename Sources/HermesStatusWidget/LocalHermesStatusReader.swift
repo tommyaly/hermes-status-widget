@@ -4,7 +4,7 @@ struct LocalHermesStatusReader: HermesStatusReading {
     func readSnapshot(cumulativeRange: CumulativeRange) async throws -> HermesSnapshot {
         let home = hermesHome()
         let gateway = readGateway(home: home)
-        let activeSession = readActiveSession(home: home)
+        let activeSessions = readActiveSessions(home: home)
         let tokenUsage = readTokenUsage(home: home, since: Date().addingTimeInterval(-86_400))
         let allTimeTokenUsage = readTokenUsage(home: home, since: cumulativeRange.since)
         let vibeCoding = readVibeCoding(home: home)
@@ -12,7 +12,7 @@ struct LocalHermesStatusReader: HermesStatusReading {
 
         return HermesSnapshot(
             gateway: gateway,
-            activeSession: activeSession,
+            activeSessions: activeSessions,
             tokenUsage: tokenUsage,
             allTimeTokenUsage: allTimeTokenUsage,
             vibeCoding: vibeCoding,
@@ -78,36 +78,57 @@ struct LocalHermesStatusReader: HermesStatusReading {
         )
     }
 
-    private func readActiveSession(home: URL) -> SessionSnapshot? {
+    private func readActiveSessions(home: URL) -> [SessionSnapshot] {
+        let now = Int(Date().timeIntervalSince1970)
+        let recentFloor = now - 86_400
         let query = """
-        SELECT s.id,
-               s.source,
-               COALESCE(s.model, ''),
-               COALESCE(NULLIF(s.title, ''), substr(s.id, 1, 8)),
-               COALESCE(MAX(m.timestamp), s.started_at) AS last_active,
-               CASE WHEN (? - COALESCE(MAX(m.timestamp), s.started_at)) < 300 THEN 1 ELSE 0 END,
-               COALESCE(s.input_tokens, 0),
-               COALESCE(s.output_tokens, 0)
-        FROM sessions s
-        LEFT JOIN messages m ON m.session_id = s.id AND COALESCE(m.active, 1) = 1
-        WHERE s.ended_at IS NULL
-        GROUP BY s.id
-        ORDER BY last_active DESC
-        LIMIT 1;
-        """
-        let rows = sqliteRows(home: home, query: query, arguments: [String(Int(Date().timeIntervalSince1970))])
-        guard let row = rows.first, row.count >= 8 else { return nil }
-
-        return SessionSnapshot(
-            id: row[0],
-            source: row[1],
-            model: row[2].isEmpty ? "unknown" : row[2],
-            title: row[3],
-            lastActive: Date(timeIntervalSince1970: TimeInterval(row[4]) ?? Date().timeIntervalSince1970),
-            isLive: row[5] == "1",
-            inputTokens: Int(row[6]) ?? 0,
-            outputTokens: Int(row[7]) ?? 0
+        WITH activity AS (
+            SELECT s.id,
+                   s.source,
+                   COALESCE(s.model, '') AS model,
+                   COALESCE(NULLIF(s.title, ''), substr(s.id, 1, 8)) AS title,
+                   COALESCE(MAX(m.timestamp), s.started_at) AS last_active,
+                   s.ended_at,
+                   COALESCE(s.input_tokens, 0) AS input_tokens,
+                   COALESCE(s.output_tokens, 0) AS output_tokens,
+                   COUNT(m.timestamp) AS active_message_count
+            FROM sessions s
+            LEFT JOIN messages m ON m.session_id = s.id AND COALESCE(m.active, 1) = 1
+            GROUP BY s.id
         )
+        SELECT id,
+               source,
+               model,
+               title,
+               last_active,
+               CASE WHEN ended_at IS NULL AND (? - last_active) < 300 THEN 1 ELSE 0 END,
+               input_tokens,
+               output_tokens
+        FROM activity
+        WHERE last_active >= ?
+          AND (
+              active_message_count > 0
+              OR input_tokens > 0
+              OR output_tokens > 0
+          )
+        ORDER BY CASE WHEN ended_at IS NULL AND (? - last_active) < 300 THEN 1 ELSE 0 END DESC,
+                 last_active DESC
+        LIMIT 3;
+        """
+        let rows = sqliteRows(home: home, query: query, arguments: [String(now), String(recentFloor), String(now)])
+        return rows.compactMap { row in
+            guard row.count >= 8 else { return nil }
+            return SessionSnapshot(
+                id: row[0],
+                source: row[1],
+                model: row[2].isEmpty ? "unknown" : row[2],
+                title: row[3],
+                lastActive: Date(timeIntervalSince1970: TimeInterval(row[4]) ?? Date().timeIntervalSince1970),
+                isLive: row[5] == "1",
+                inputTokens: Int(row[6]) ?? 0,
+                outputTokens: Int(row[7]) ?? 0
+            )
+        }
     }
 
     private func readTokenUsage(home: URL, since: Date?) -> TokenUsageSnapshot {
@@ -259,8 +280,7 @@ struct LocalHermesStatusReader: HermesStatusReading {
     }
 
     private func sqliteRows(home: URL, query: String, arguments: [String]) -> [[String]] {
-        let db = home.appendingPathComponent("state.db").path
-        guard FileManager.default.fileExists(atPath: db) else { return [] }
+        guard let db = stateDatabasePath(home: home) else { return [] }
 
         let sql = ".parameter clear\n" +
             arguments.enumerated().map { ".parameter set ?\($0.offset + 1) '\($0.element.replacingOccurrences(of: "'", with: "''"))'" }.joined(separator: "\n") +
@@ -291,6 +311,16 @@ struct LocalHermesStatusReader: HermesStatusReading {
         return output
             .split(separator: "\n", omittingEmptySubsequences: true)
             .map { line in line.split(separator: "\t", omittingEmptySubsequences: false).map(String.init) }
+    }
+
+    private func stateDatabasePath(home: URL) -> String? {
+        for name in ["state.db", "hermes_state.db"] {
+            let path = home.appendingPathComponent(name).path
+            if FileManager.default.fileExists(atPath: path) {
+                return path
+            }
+        }
+        return nil
     }
 
     private func isProcessRunning(pid: Int) -> Bool {

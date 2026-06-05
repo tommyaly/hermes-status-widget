@@ -2,7 +2,7 @@ import Foundation
 
 struct HermesSnapshot: Codable, Equatable {
     var gateway: GatewaySnapshot
-    var activeSession: SessionSnapshot?
+    var activeSessions: [SessionSnapshot]
     var tokenUsage: TokenUsageSnapshot
     var allTimeTokenUsage: TokenUsageSnapshot
     var vibeCoding: VibeCodingSnapshot
@@ -10,9 +10,33 @@ struct HermesSnapshot: Codable, Equatable {
     var refreshedAt: Date
     var error: String?
 
+    var activeSession: SessionSnapshot? {
+        activeSessions.first
+    }
+
+    init(
+        gateway: GatewaySnapshot,
+        activeSessions: [SessionSnapshot],
+        tokenUsage: TokenUsageSnapshot,
+        allTimeTokenUsage: TokenUsageSnapshot,
+        vibeCoding: VibeCodingSnapshot,
+        memory: MemorySnapshot,
+        refreshedAt: Date,
+        error: String?
+    ) {
+        self.gateway = gateway
+        self.activeSessions = activeSessions
+        self.tokenUsage = tokenUsage
+        self.allTimeTokenUsage = allTimeTokenUsage
+        self.vibeCoding = vibeCoding
+        self.memory = memory
+        self.refreshedAt = refreshedAt
+        self.error = error
+    }
+
     static let empty = HermesSnapshot(
         gateway: .offline,
-        activeSession: nil,
+        activeSessions: [],
         tokenUsage: .empty,
         allTimeTokenUsage: .empty,
         vibeCoding: .empty,
@@ -20,6 +44,47 @@ struct HermesSnapshot: Codable, Equatable {
         refreshedAt: Date(),
         error: nil
     )
+
+    enum CodingKeys: String, CodingKey {
+        case gateway
+        case activeSessions
+        case activeSession
+        case tokenUsage
+        case allTimeTokenUsage
+        case vibeCoding
+        case memory
+        case refreshedAt
+        case error
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let legacySession = try container.decodeIfPresent(SessionSnapshot.self, forKey: .activeSession)
+
+        gateway = try container.decode(GatewaySnapshot.self, forKey: .gateway)
+        activeSessions = try container.decodeIfPresent([SessionSnapshot].self, forKey: .activeSessions)
+            ?? legacySession.map { [$0] }
+            ?? []
+        tokenUsage = try container.decode(TokenUsageSnapshot.self, forKey: .tokenUsage)
+        allTimeTokenUsage = try container.decode(TokenUsageSnapshot.self, forKey: .allTimeTokenUsage)
+        vibeCoding = try container.decode(VibeCodingSnapshot.self, forKey: .vibeCoding)
+        memory = try container.decode(MemorySnapshot.self, forKey: .memory)
+        refreshedAt = try container.decode(Date.self, forKey: .refreshedAt)
+        error = try container.decodeIfPresent(String.self, forKey: .error)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(gateway, forKey: .gateway)
+        try container.encode(activeSessions, forKey: .activeSessions)
+        try container.encodeIfPresent(activeSession, forKey: .activeSession)
+        try container.encode(tokenUsage, forKey: .tokenUsage)
+        try container.encode(allTimeTokenUsage, forKey: .allTimeTokenUsage)
+        try container.encode(vibeCoding, forKey: .vibeCoding)
+        try container.encode(memory, forKey: .memory)
+        try container.encode(refreshedAt, forKey: .refreshedAt)
+        try container.encodeIfPresent(error, forKey: .error)
+    }
 }
 
 struct GatewaySnapshot: Codable, Equatable {
@@ -46,7 +111,7 @@ struct PlatformSnapshot: Codable, Identifiable, Equatable {
     var state: String
 }
 
-struct SessionSnapshot: Codable, Equatable {
+struct SessionSnapshot: Codable, Identifiable, Equatable {
     var id: String
     var source: String
     var model: String

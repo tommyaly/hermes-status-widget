@@ -229,33 +229,45 @@ struct HermesWidgetView: View {
     }
 
     private func agentSummaryCard(_ snapshot: HermesSnapshot) -> some View {
-        VStack(alignment: .leading, spacing: 5) {
+        let sessions = Array(snapshot.activeSessions.prefix(3))
+
+        return VStack(alignment: .leading, spacing: 5) {
             Text("当前 Agent")
                 .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(.white.opacity(0.58))
 
-            if let session = snapshot.activeSession {
-                Text(session.title)
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .lineLimit(2)
-                    .frame(minHeight: 26, alignment: .topLeading)
-                Text("\(session.source) · \(session.model)")
-                    .font(.system(size: 10))
-                    .foregroundStyle(.white.opacity(0.56))
-                    .lineLimit(1)
-                Text(session.isLive ? "进行中 · \(relativeTime(session.lastActive))" : "最近活跃 · \(relativeTime(session.lastActive))")
-                    .font(.system(size: 10))
-                    .foregroundStyle(session.isLive ? .green.opacity(0.85) : .white.opacity(0.52))
-                    .lineLimit(1)
-            } else {
+            if sessions.isEmpty {
                 Text(snapshot.gateway.activeAgents > 0 ? "\(snapshot.gateway.activeAgents) 个网关 agent 活跃" : "空闲")
                     .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(.white.opacity(0.84))
                     .frame(minHeight: 46, alignment: .topLeading)
+            } else {
+                VStack(alignment: .leading, spacing: 4) {
+                    ForEach(sessions) { session in
+                        widgetSessionRow(session)
+                    }
+                }
             }
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
+    }
+
+    private func widgetSessionRow(_ session: SessionSnapshot) -> some View {
+        VStack(alignment: .leading, spacing: 1) {
+            HStack(spacing: 4) {
+                Circle()
+                    .fill(session.isLive ? Color.green : Color.white.opacity(0.42))
+                    .frame(width: 5, height: 5)
+                Text(session.title)
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+            }
+            Text("\(session.source) · \(session.model) · \(relativeTime(session.lastActive))")
+                .font(.system(size: 9))
+                .foregroundStyle(.white.opacity(0.54))
+                .lineLimit(1)
+        }
     }
 
     private func tokenSummaryCard(_ usage: TokenUsageSnapshot) -> some View {
@@ -386,6 +398,13 @@ struct HermesWidgetView: View {
 
     private func statusText(_ snapshot: HermesSnapshot) -> String {
         guard snapshot.gateway.isRunning else { return "网关离线" }
+        let liveCount = snapshot.activeSessions.filter(\.isLive).count
+        if liveCount > 1 {
+            return "\(liveCount) 个 Agent 进行中"
+        }
+        if snapshot.activeSessions.count > 1 {
+            return "\(snapshot.activeSessions.count) 个最近活跃"
+        }
         if let session = snapshot.activeSession {
             return session.isLive ? "Agent 进行中 · \(session.source)" : "最近活跃 · \(session.source)"
         }
