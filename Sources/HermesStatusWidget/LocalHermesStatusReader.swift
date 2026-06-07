@@ -7,6 +7,7 @@ struct LocalHermesStatusReader: HermesStatusReading {
         let activeSessions = readActiveSessions(home: home)
         let tokenUsage = readTokenUsage(home: home, since: Date().addingTimeInterval(-86_400))
         let allTimeTokenUsage = readTokenUsage(home: home, since: cumulativeRange.since)
+        let sevenDayTokenUsage = readTokenUsage(home: home, since: Date().addingTimeInterval(-7 * 86_400))
         let vibeCoding = readVibeCoding(home: home)
         let memory = readMemory(pid: gateway.pid)
 
@@ -15,6 +16,7 @@ struct LocalHermesStatusReader: HermesStatusReading {
             activeSessions: activeSessions,
             tokenUsage: tokenUsage,
             allTimeTokenUsage: allTimeTokenUsage,
+            sevenDayTokenUsage: sevenDayTokenUsage,
             vibeCoding: vibeCoding,
             memory: memory,
             refreshedAt: Date(),
@@ -132,22 +134,31 @@ struct LocalHermesStatusReader: HermesStatusReading {
     }
 
     private func readTokenUsage(home: URL, since: Date?) -> TokenUsageSnapshot {
-        let whereClause = since == nil ? "" : "WHERE started_at >= ?"
+        let whereClause = since == nil ? "" : "WHERE activity_at >= ?"
         let query = """
+        WITH session_activity AS (
+            SELECT s.model,
+                   s.input_tokens,
+                   s.output_tokens,
+                   s.cache_read_tokens,
+                   s.cache_write_tokens,
+                   s.reasoning_tokens,
+                   COALESCE(MAX(m.timestamp), s.ended_at, s.started_at) AS activity_at
+            FROM sessions s
+            LEFT JOIN messages m ON m.session_id = s.id AND COALESCE(m.active, 1) = 1
+            GROUP BY s.id
+        )
         SELECT COALESCE(NULLIF(model, ''), 'unknown') AS model,
                COALESCE(SUM(input_tokens), 0),
                COALESCE(SUM(output_tokens), 0),
                COALESCE(SUM(cache_read_tokens), 0),
                COALESCE(SUM(cache_write_tokens), 0),
                COALESCE(SUM(reasoning_tokens), 0)
-        FROM sessions
+        FROM session_activity
         \(whereClause)
         GROUP BY model
         ORDER BY COALESCE(SUM(input_tokens), 0)
-               + COALESCE(SUM(output_tokens), 0)
-               + COALESCE(SUM(cache_read_tokens), 0)
-               + COALESCE(SUM(cache_write_tokens), 0)
-               + COALESCE(SUM(reasoning_tokens), 0) DESC
+               + COALESCE(SUM(output_tokens), 0) DESC
         """
         let args = since.map { [String(Int($0.timeIntervalSince1970))] } ?? []
         let rows = sqliteRows(home: home, query: query, arguments: args)
@@ -235,22 +246,28 @@ struct LocalHermesStatusReader: HermesStatusReading {
             let end = min(rawEnd, nowSeconds)
             guard end > start else { continue }
 
-            var points = activity.messageTimes
+            let messagePoints = activity.messageTimes
                 .filter { $0 >= start && $0 <= end }
                 .sorted()
-            points.insert(start, at: 0)
-            if points.last != end {
-                points.append(end)
-            }
 
-            let duration: TimeInterval
-            if points.count <= 2 && activity.messageTimes.isEmpty {
-                duration = min(end - start, singleMessageCredit)
+            let rawDuration: TimeInterval
+            if messagePoints.isEmpty {
+                guard activity.startedAt >= dayStartSeconds else { continue }
+                rawDuration = min(end - start, singleMessageCredit)
             } else {
-                duration = zip(points, points.dropFirst()).reduce(0) { total, pair in
+                var points = messagePoints
+                if activity.startedAt >= dayStartSeconds && activity.startedAt < points[0] {
+                    points.insert(activity.startedAt, at: 0)
+                }
+                if end > (points.last ?? start), isActive || activity.endedAt != nil {
+                    points.append(end)
+                }
+
+                rawDuration = zip(points, points.dropFirst()).reduce(0) { total, pair in
                     total + min(max(0, pair.1 - pair.0), maxIdleGap)
                 }
             }
+            let duration = messagePoints.isEmpty ? rawDuration : max(rawDuration, singleMessageCredit)
 
             guard duration > 0 else { continue }
             todaySeconds += Int(duration.rounded())

@@ -5,6 +5,7 @@ struct HermesSnapshot: Codable, Equatable {
     var activeSessions: [SessionSnapshot]
     var tokenUsage: TokenUsageSnapshot
     var allTimeTokenUsage: TokenUsageSnapshot
+    var sevenDayTokenUsage: TokenUsageSnapshot
     var vibeCoding: VibeCodingSnapshot
     var memory: MemorySnapshot
     var refreshedAt: Date
@@ -19,6 +20,7 @@ struct HermesSnapshot: Codable, Equatable {
         activeSessions: [SessionSnapshot],
         tokenUsage: TokenUsageSnapshot,
         allTimeTokenUsage: TokenUsageSnapshot,
+        sevenDayTokenUsage: TokenUsageSnapshot,
         vibeCoding: VibeCodingSnapshot,
         memory: MemorySnapshot,
         refreshedAt: Date,
@@ -28,6 +30,7 @@ struct HermesSnapshot: Codable, Equatable {
         self.activeSessions = activeSessions
         self.tokenUsage = tokenUsage
         self.allTimeTokenUsage = allTimeTokenUsage
+        self.sevenDayTokenUsage = sevenDayTokenUsage
         self.vibeCoding = vibeCoding
         self.memory = memory
         self.refreshedAt = refreshedAt
@@ -39,6 +42,7 @@ struct HermesSnapshot: Codable, Equatable {
         activeSessions: [],
         tokenUsage: .empty,
         allTimeTokenUsage: .empty,
+        sevenDayTokenUsage: .empty,
         vibeCoding: .empty,
         memory: .unknown,
         refreshedAt: Date(),
@@ -51,6 +55,7 @@ struct HermesSnapshot: Codable, Equatable {
         case activeSession
         case tokenUsage
         case allTimeTokenUsage
+        case sevenDayTokenUsage
         case vibeCoding
         case memory
         case refreshedAt
@@ -67,6 +72,7 @@ struct HermesSnapshot: Codable, Equatable {
             ?? []
         tokenUsage = try container.decode(TokenUsageSnapshot.self, forKey: .tokenUsage)
         allTimeTokenUsage = try container.decode(TokenUsageSnapshot.self, forKey: .allTimeTokenUsage)
+        sevenDayTokenUsage = try container.decodeIfPresent(TokenUsageSnapshot.self, forKey: .sevenDayTokenUsage) ?? allTimeTokenUsage
         vibeCoding = try container.decode(VibeCodingSnapshot.self, forKey: .vibeCoding)
         memory = try container.decode(MemorySnapshot.self, forKey: .memory)
         refreshedAt = try container.decode(Date.self, forKey: .refreshedAt)
@@ -80,6 +86,7 @@ struct HermesSnapshot: Codable, Equatable {
         try container.encodeIfPresent(activeSession, forKey: .activeSession)
         try container.encode(tokenUsage, forKey: .tokenUsage)
         try container.encode(allTimeTokenUsage, forKey: .allTimeTokenUsage)
+        try container.encode(sevenDayTokenUsage, forKey: .sevenDayTokenUsage)
         try container.encode(vibeCoding, forKey: .vibeCoding)
         try container.encode(memory, forKey: .memory)
         try container.encode(refreshedAt, forKey: .refreshedAt)
@@ -165,7 +172,7 @@ struct ModelTokenUsage: Codable, Identifiable, Equatable {
     var reasoning: Int
 
     var total: Int {
-        input + output + cacheRead + cacheWrite + reasoning
+        input + output
     }
 
     var promptSideTotal: Int {

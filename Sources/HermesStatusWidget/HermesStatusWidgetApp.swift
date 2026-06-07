@@ -72,7 +72,7 @@ final class AppController: NSObject, NSApplicationDelegate {
         popover.contentViewController = hosting
         popover.behavior = .applicationDefined
         popover.animates = true
-        popover.contentSize = NSSize(width: 440, height: 680)
+        popover.contentSize = NSSize(width: HermesStatusPanelView.panelWidth, height: HermesStatusPanelView.panelHeight)
 
         self.popover = popover
     }

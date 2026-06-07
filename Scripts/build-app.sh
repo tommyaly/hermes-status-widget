@@ -33,4 +33,8 @@ codesign \
   --timestamp=none \
   "$APP_DIR"
 
+/usr/bin/pluginkit -r "$BUILT_APP/Contents/PlugIns/HermesStatusWidgetExtension.appex" >/dev/null 2>&1 || true
+/System/Library/Frameworks/CoreServices.framework/Versions/Current/Frameworks/LaunchServices.framework/Versions/Current/Support/lsregister \
+  -u "$BUILT_APP" >/dev/null 2>&1 || true
+
 echo "$APP_DIR"

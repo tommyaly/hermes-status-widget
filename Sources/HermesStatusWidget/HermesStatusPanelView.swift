@@ -1,6 +1,9 @@
 import SwiftUI
 
 struct HermesStatusPanelView: View {
+    static let panelWidth: CGFloat = 420
+    static let panelHeight: CGFloat = 540
+
     @Environment(StatusStore.self) private var store
     @Environment(\.refreshHermesStatus) private var refresh
     @Environment(\.quitHermesStatusWidget) private var quit
@@ -10,7 +13,7 @@ struct HermesStatusPanelView: View {
     var body: some View {
         let snapshot = store.snapshot
 
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 12) {
             header(snapshot, showingSettings: showingSettings)
 
             Divider().opacity(0.45)
@@ -20,7 +23,7 @@ struct HermesStatusPanelView: View {
                 Spacer(minLength: 0)
             } else {
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 14) {
+                    VStack(alignment: .leading, spacing: 12) {
                         vibeCodingSection(snapshot.vibeCoding)
                         agentSection(snapshot)
                         usageSection(snapshot.tokenUsage)
@@ -33,8 +36,8 @@ struct HermesStatusPanelView: View {
                 .scrollIndicators(.visible)
             }
         }
-        .padding(18)
-        .frame(width: 440, height: 680, alignment: .topLeading)
+        .padding(16)
+        .frame(width: Self.panelWidth, height: Self.panelHeight, alignment: .topLeading)
         .background(.regularMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         .overlay(
@@ -325,21 +328,19 @@ struct HermesStatusPanelView: View {
     }
 
     private func footer(_ snapshot: HermesSnapshot) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 8) {
-                if snapshot.gateway.platforms.isEmpty {
-                    Text("暂无平台状态")
-                } else {
-                    Text(snapshot.gateway.platforms.map { "\($0.name): \(stateLabel($0.state))" }.joined(separator: "  "))
-                        .lineLimit(1)
-                }
-
-                Spacer()
-
-                Text(snapshot.refreshedAt, style: .time)
+        VStack(alignment: .leading, spacing: 9) {
+            HStack(spacing: 10) {
+                Rectangle()
+                    .fill(.secondary.opacity(0.22))
+                    .frame(height: 1)
+                Text("@tommaly")
+                    .font(.system(size: 10, weight: .medium, design: .monospaced))
+                    .foregroundStyle(.secondary)
+                    .fixedSize()
+                Rectangle()
+                    .fill(.secondary.opacity(0.22))
+                    .frame(height: 1)
             }
-            .font(.system(size: 10))
-            .foregroundStyle(.secondary)
 
             HStack(spacing: 8) {
                 Button(action: refresh) {
@@ -349,10 +350,13 @@ struct HermesStatusPanelView: View {
 
                 Spacer()
 
-                Button(action: quit) {
-                    Label("退出", systemImage: "power")
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text(snapshot.gateway.platforms.isEmpty ? "暂无平台状态" : snapshot.gateway.platforms.map { "\($0.name): \(stateLabel($0.state))" }.joined(separator: "  "))
+                        .lineLimit(1)
+                    Text(snapshot.refreshedAt, style: .time)
                 }
-                .buttonStyle(.bordered)
+                .font(.system(size: 10))
+                .foregroundStyle(.secondary)
             }
         }
     }
@@ -412,6 +416,9 @@ struct HermesStatusPanelView: View {
     }
 
     private func formatDuration(_ seconds: Int) -> String {
+        if seconds > 0 && seconds < 60 {
+            return "<1分"
+        }
         let hours = seconds / 3600
         let minutes = (seconds % 3600) / 60
         if hours > 0 {

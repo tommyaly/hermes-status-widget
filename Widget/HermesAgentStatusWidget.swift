@@ -49,17 +49,21 @@ struct HermesWidgetView: View {
     var body: some View {
         let snapshot = entry.snapshot
         let usage = snapshot.tokenUsage
+        let sevenDayUsage = snapshot.sevenDayTokenUsage
 
         switch family {
         case .systemSmall:
             small(snapshot: snapshot, usage: usage)
                 .containerBackground(for: .widget) { widgetBackground }
+                .unredacted()
         case .systemLarge:
             large(snapshot: snapshot, usage: usage)
                 .containerBackground(for: .widget) { widgetBackground }
+                .unredacted()
         default:
-            medium(snapshot: snapshot, usage: usage)
+            medium(snapshot: snapshot, usage: usage, modelUsage: sevenDayUsage)
                 .containerBackground(for: .widget) { widgetBackground }
+                .unredacted()
         }
     }
 
@@ -76,7 +80,7 @@ struct HermesWidgetView: View {
     }
 
     private func small(snapshot: HermesSnapshot, usage: TokenUsageSnapshot) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 7) {
             HStack {
                 statusDot(snapshot)
                 Spacer()
@@ -85,7 +89,7 @@ struct HermesWidgetView: View {
                     .foregroundStyle(snapshot.gateway.isRunning ? .green.opacity(0.88) : .white.opacity(0.58))
             }
 
-            Text("24 小时 Token")
+            Text("24 小时实际 Token")
                 .font(.system(size: 11, weight: .medium))
                 .foregroundStyle(.white.opacity(0.62))
 
@@ -93,10 +97,16 @@ struct HermesWidgetView: View {
                 .font(.system(size: 25, weight: .bold, design: .monospaced))
                 .foregroundStyle(.white)
                 .lineLimit(1)
+                .minimumScaleFactor(0.76)
+
+            HStack(spacing: 8) {
+                miniMetric("输入", formatTokenCount(usage.input))
+                miniMetric("输出", formatTokenCount(usage.output))
+            }
 
             Spacer()
 
-            Text("Agent 今日服务时长")
+            Text("今日服务时长")
                 .font(.system(size: 10, weight: .medium))
                 .foregroundStyle(.white.opacity(0.62))
 
@@ -105,15 +115,11 @@ struct HermesWidgetView: View {
                 .foregroundStyle(.white)
                 .lineLimit(1)
                 .minimumScaleFactor(0.75)
-
-            Text(formatPercent(snapshot.vibeCoding.dayRatio))
-                .font(.system(size: 10, weight: .medium, design: .monospaced))
-                .foregroundStyle(.white.opacity(0.58))
         }
         .padding(14)
     }
 
-    private func medium(snapshot: HermesSnapshot, usage: TokenUsageSnapshot) -> some View {
+    private func medium(snapshot: HermesSnapshot, usage: TokenUsageSnapshot, modelUsage: TokenUsageSnapshot) -> some View {
         HStack(spacing: 12) {
             vibeRing(snapshot.vibeCoding, size: 72, lineWidth: 7)
 
@@ -141,7 +147,7 @@ struct HermesWidgetView: View {
                     widgetMetric("命中", formatCacheHitRate(usage.cacheHitRate))
                 }
 
-                modelLine(usage.byModel.first)
+                modelLine(modelUsage.byModel.first, title: "7天模型")
             }
         }
         .padding(14)
@@ -178,7 +184,7 @@ struct HermesWidgetView: View {
                 tokenSummaryCard(usage)
             }
 
-            modelSummary(usage)
+            modelSummary(snapshot.sevenDayTokenUsage)
         }
         .padding(12)
     }
@@ -287,8 +293,8 @@ struct HermesWidgetView: View {
                     .foregroundStyle(.green.opacity(0.86))
             }
             HStack(spacing: 8) {
-                widgetMetric("输入", formatTokenCount(usage.input))
-                widgetMetric("输出", formatTokenCount(usage.output))
+                widgetMetric("实际输入", formatTokenCount(usage.input))
+                widgetMetric("实际输出", formatTokenCount(usage.output))
             }
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
@@ -296,9 +302,11 @@ struct HermesWidgetView: View {
 
     private func modelSummary(_ usage: TokenUsageSnapshot) -> some View {
         VStack(alignment: .leading, spacing: 5) {
-            Text("模型消耗")
+            Text("累计模型消耗（7天）")
                 .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(.white.opacity(0.58))
+                .lineLimit(1)
+                .minimumScaleFactor(0.72)
 
             if usage.byModel.isEmpty {
                 Text("没有 token 记录")
@@ -358,16 +366,35 @@ struct HermesWidgetView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private func modelLine(_ row: ModelTokenUsage?) -> some View {
-        HStack {
-            Text(row?.model ?? "暂无模型")
-                .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(.white.opacity(0.78))
+    private func miniMetric(_ label: String, _ value: String) -> some View {
+        VStack(alignment: .leading, spacing: 1) {
+            Text(label)
+                .font(.system(size: 9))
+                .foregroundStyle(.white.opacity(0.52))
+            Text(value)
+                .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                .foregroundStyle(.white.opacity(0.86))
                 .lineLimit(1)
-            Spacer()
-            Text(formatTokenCount(row?.total ?? 0))
-                .font(.system(size: 11, design: .monospaced))
-                .foregroundStyle(.white.opacity(0.70))
+                .minimumScaleFactor(0.68)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func modelLine(_ row: ModelTokenUsage?, title: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title)
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.56))
+            HStack {
+                Text(row?.model ?? "暂无模型")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.78))
+                    .lineLimit(1)
+                Spacer()
+                Text(formatTokenCount(row?.total ?? 0))
+                    .font(.system(size: 11, design: .monospaced))
+                    .foregroundStyle(.white.opacity(0.70))
+            }
         }
     }
 
@@ -431,6 +458,9 @@ struct HermesWidgetView: View {
     }
 
     private func formatDuration(_ seconds: Int) -> String {
+        if seconds > 0 && seconds < 60 {
+            return "<1m"
+        }
         let hours = seconds / 3600
         let minutes = (seconds % 3600) / 60
         if hours > 0 {
