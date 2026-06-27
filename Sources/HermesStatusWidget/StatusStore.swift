@@ -1,8 +1,11 @@
 import Foundation
 import Observation
+import os.log
 #if canImport(WidgetKit)
 import WidgetKit
 #endif
+
+private let logger = Logger(subsystem: "local.hermes.statuswidget", category: "StatusStore")
 
 @MainActor
 @Observable
@@ -19,10 +22,13 @@ final class StatusStore {
 
     func refresh() async {
         do {
-            snapshot = try await reader.readSnapshot(cumulativeRange: cumulativeRange)
+            let result = try await reader.readSnapshot(cumulativeRange: cumulativeRange)
+            snapshot = result
             WidgetSnapshotStore.write(snapshot)
+            logger.info("Snapshot refreshed successfully: gateway=\(snapshot.gateway.state), isRunning=\(snapshot.gateway.isRunning)")
             reloadWidgetTimelines()
         } catch {
+            logger.error("readSnapshot failed: \(error.localizedDescription)")
             var next = HermesSnapshot.empty
             next.error = error.localizedDescription
             next.refreshedAt = Date()

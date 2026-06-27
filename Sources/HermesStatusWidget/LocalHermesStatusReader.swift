@@ -1,4 +1,5 @@
 import Foundation
+import os.log
 
 struct LocalHermesStatusReader: HermesStatusReading {
     func readSnapshot(cumulativeRange: CumulativeRange) async throws -> HermesSnapshot {
@@ -315,16 +316,28 @@ struct LocalHermesStatusReader: HermesStatusReading {
 
         do {
             try task.run()
-            stdin.fileHandleForWriting.write(sql.data(using: .utf8) ?? Data())
-            try? stdin.fileHandleForWriting.close()
-            task.waitUntilExit()
+            let inputData = sql.data(using: .utf8) ?? Data()
+            try stdin.fileHandleForWriting.write(inputData)
+            try stdin.fileHandleForWriting.close()
         } catch {
             return []
         }
 
-        guard task.terminationStatus == 0 else { return [] }
-        let data = stdout.fileHandleForReading.readDataToEndOfFile()
-        let output = String(data: data, encoding: .utf8) ?? ""
+        task.waitUntilExit()
+        let stdoutData = try? stdout.fileHandleForReading.readDataToEndOfFile()
+        var output = String(data: stdoutData ?? Data(), encoding: .utf8) ?? ""
+
+        if task.terminationStatus != 0 {
+            let stderrData = try? task.standardError?.fileHandleForReading.readDataToEndOfFile()
+            let stderrMsg = String(data: stderrData ?? Data(), encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            os_log("sqlite3 terminated with status %ld: %s", type: .error, task.terminationStatus, stderrMsg)
+            return []
+        }
+
+        // Remove trailing newline that sqlite3 appends
+        if output.hasSuffix("\n") {
+            output = String(output.dropLast())
+        }
         return output
             .split(separator: "\n", omittingEmptySubsequences: true)
             .map { line in line.split(separator: "\t", omittingEmptySubsequences: false).map(String.init) }
