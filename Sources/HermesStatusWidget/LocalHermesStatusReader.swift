@@ -300,19 +300,14 @@ struct LocalHermesStatusReader: HermesStatusReading {
     private func sqliteRows(home: URL, query: String, arguments: [String]) -> [[String]] {
         guard let db = stateDatabasePath(home: home) else { return [] }
 
-        // Build a SQL script file and pass it via the file argument instead of stdin.
-        // Using stdin + .parameter causes sqlite3 to hang in Task.detached contexts
-        // because write/close timing is unreliable.
         let script = ".parameter clear\n" +
             arguments.enumerated().map {
                 ".parameter set ?\($0.offset + 1) '\($0.element.replacingOccurrences(of: "'", with: "''"))'"
             }.joined(separator: "\n") +
             "\n.mode tabs\n.headers off\n\(query)\n"
 
-        let task = Process()
-        task.executableURL = URL(fileURLWithPath: "/usr/bin/sqlite3")
-
-        // Write script to a temp file so sqlite3 can read it without stdin/EOF issues.
+        // Write SQL script to a temp file to avoid stdin/EOF issues with Process.
+        // stdin Pipe kept alive by Process prevents EOF, causing sqlite3 to hang forever.
         let tmpDir = FileManager.default.temporaryDirectory
         let scriptFile = tmpDir.appendingPathComponent("hsw-\(UUID().uuidString).sql")
         do {
@@ -321,7 +316,9 @@ struct LocalHermesStatusReader: HermesStatusReading {
             return []
         }
 
-        task.arguments = ["-readonly", "file:\(db)?mode=ro", "@\(scriptFile.path)"]
+        let task = Process()
+        task.executableURL = URL(fileURLWithPath: "/usr/bin/sqlite3")
+        task.arguments = ["-cmd", ".read '\(scriptFile.path)'", "file:\(db)?immutable=1"]
 
         let stdout = Pipe()
         let stderr = Pipe()
@@ -331,16 +328,17 @@ struct LocalHermesStatusReader: HermesStatusReading {
         do {
             try task.run()
         } catch {
+            try? FileManager.default.removeItem(at: scriptFile)
             return []
         }
 
-        task.waitUntilExit()
-
-        // Clean up temp file (best-effort)
-        try? FileManager.default.removeItem(at: scriptFile)
-
+        // Read stdout BEFORE waitUntilExit to avoid deadlock.
+        // If output exceeds PIPE buffer (64KB), sqlite3 will block until stdout is consumed.
         let stdoutData = try? stdout.fileHandleForReading.readDataToEndOfFile()
         var output = String(data: stdoutData ?? Data(), encoding: .utf8) ?? ""
+
+        task.waitUntilExit()
+        try? FileManager.default.removeItem(at: scriptFile)
 
         if task.terminationStatus != 0 {
             let stderrData = try? stderr.fileHandleForReading.readDataToEndOfFile()
@@ -349,7 +347,6 @@ struct LocalHermesStatusReader: HermesStatusReading {
             return []
         }
 
-        // Remove trailing newline that sqlite3 appends
         if output.hasSuffix("\n") {
             output = String(output.dropLast())
         }
