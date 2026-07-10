@@ -300,35 +300,50 @@ struct LocalHermesStatusReader: HermesStatusReading {
     private func sqliteRows(home: URL, query: String, arguments: [String]) -> [[String]] {
         guard let db = stateDatabasePath(home: home) else { return [] }
 
-        let sql = ".parameter clear\n" +
-            arguments.enumerated().map { ".parameter set ?\($0.offset + 1) '\($0.element.replacingOccurrences(of: "'", with: "''"))'" }.joined(separator: "\n") +
+        // Build a SQL script file and pass it via the file argument instead of stdin.
+        // Using stdin + .parameter causes sqlite3 to hang in Task.detached contexts
+        // because write/close timing is unreliable.
+        let script = ".parameter clear\n" +
+            arguments.enumerated().map {
+                ".parameter set ?\($0.offset + 1) '\($0.element.replacingOccurrences(of: "'", with: "''"))'"
+            }.joined(separator: "\n") +
             "\n.mode tabs\n.headers off\n\(query)\n"
 
         let task = Process()
         task.executableURL = URL(fileURLWithPath: "/usr/bin/sqlite3")
-        task.arguments = ["-readonly", "file:\(db)?mode=ro"]
 
-        let stdin = Pipe()
+        // Write script to a temp file so sqlite3 can read it without stdin/EOF issues.
+        let tmpDir = FileManager.default.temporaryDirectory
+        let scriptFile = tmpDir.appendingPathComponent("hsw-\(UUID().uuidString).sql")
+        do {
+            try script.write(to: scriptFile, atomically: true, encoding: .utf8)
+        } catch {
+            return []
+        }
+
+        task.arguments = ["-readonly", "file:\(db)?mode=ro", "@\(scriptFile.path)"]
+
         let stdout = Pipe()
-        task.standardInput = stdin
+        let stderr = Pipe()
         task.standardOutput = stdout
-        task.standardError = Pipe()
+        task.standardError = stderr
 
         do {
             try task.run()
-            let inputData = sql.data(using: .utf8) ?? Data()
-            try stdin.fileHandleForWriting.write(inputData)
-            try stdin.fileHandleForWriting.close()
         } catch {
             return []
         }
 
         task.waitUntilExit()
+
+        // Clean up temp file (best-effort)
+        try? FileManager.default.removeItem(at: scriptFile)
+
         let stdoutData = try? stdout.fileHandleForReading.readDataToEndOfFile()
         var output = String(data: stdoutData ?? Data(), encoding: .utf8) ?? ""
 
         if task.terminationStatus != 0 {
-            let stderrData = try? task.standardError?.fileHandleForReading.readDataToEndOfFile()
+            let stderrData = try? stderr.fileHandleForReading.readDataToEndOfFile()
             let stderrMsg = String(data: stderrData ?? Data(), encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
             os_log("sqlite3 terminated with status %ld: %s", type: .error, task.terminationStatus, stderrMsg)
             return []

@@ -28,7 +28,9 @@ final class AppController: NSObject, NSApplicationDelegate {
         setupStatusItem()
         setupPopover()
         setupLaunchGuide()
-        refresh()
+        Task { @MainActor in
+            refresh()
+        }
 
         let refreshTimer = Timer(timeInterval: 30, repeats: true) { [weak self] _ in
             Task { @MainActor in

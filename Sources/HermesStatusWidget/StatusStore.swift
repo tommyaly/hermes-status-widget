@@ -20,12 +20,15 @@ final class StatusStore {
         self.cumulativeRange = CumulativeRange.load()
     }
 
+    @MainActor
     func refresh() async {
         do {
-            let result = try await reader.readSnapshot(cumulativeRange: cumulativeRange)
+            let result = try await Task.detached(priority: .userInitiated) {
+                try await self.reader.readSnapshot(cumulativeRange: self.cumulativeRange)
+            }.value
             snapshot = result
             WidgetSnapshotStore.write(snapshot)
-            logger.info("Snapshot refreshed successfully: gateway=\(snapshot.gateway.state), isRunning=\(snapshot.gateway.isRunning)")
+            logger.info("Snapshot refreshed successfully: gateway=\(self.snapshot.gateway.state), isRunning=\(self.snapshot.gateway.isRunning)")
             reloadWidgetTimelines()
         } catch {
             logger.error("readSnapshot failed: \(error.localizedDescription)")
