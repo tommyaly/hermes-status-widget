@@ -1,4 +1,5 @@
 import Foundation
+import os.log
 
 struct LocalHermesStatusReader: HermesStatusReading {
     func readSnapshot(cumulativeRange: CumulativeRange) async throws -> HermesSnapshot {
@@ -299,32 +300,56 @@ struct LocalHermesStatusReader: HermesStatusReading {
     private func sqliteRows(home: URL, query: String, arguments: [String]) -> [[String]] {
         guard let db = stateDatabasePath(home: home) else { return [] }
 
-        let sql = ".parameter clear\n" +
-            arguments.enumerated().map { ".parameter set ?\($0.offset + 1) '\($0.element.replacingOccurrences(of: "'", with: "''"))'" }.joined(separator: "\n") +
+        let script = ".parameter clear\n" +
+            arguments.enumerated().map {
+                ".parameter set ?\($0.offset + 1) '\($0.element.replacingOccurrences(of: "'", with: "''"))'"
+            }.joined(separator: "\n") +
             "\n.mode tabs\n.headers off\n\(query)\n"
 
-        let task = Process()
-        task.executableURL = URL(fileURLWithPath: "/usr/bin/sqlite3")
-        task.arguments = ["-readonly", "file:\(db)?mode=ro"]
-
-        let stdin = Pipe()
-        let stdout = Pipe()
-        task.standardInput = stdin
-        task.standardOutput = stdout
-        task.standardError = Pipe()
-
+        // Write SQL script to a temp file to avoid stdin/EOF issues with Process.
+        // stdin Pipe kept alive by Process prevents EOF, causing sqlite3 to hang forever.
+        let tmpDir = FileManager.default.temporaryDirectory
+        let scriptFile = tmpDir.appendingPathComponent("hsw-\(UUID().uuidString).sql")
         do {
-            try task.run()
-            stdin.fileHandleForWriting.write(sql.data(using: .utf8) ?? Data())
-            try? stdin.fileHandleForWriting.close()
-            task.waitUntilExit()
+            try script.write(to: scriptFile, atomically: true, encoding: .utf8)
         } catch {
             return []
         }
 
-        guard task.terminationStatus == 0 else { return [] }
-        let data = stdout.fileHandleForReading.readDataToEndOfFile()
-        let output = String(data: data, encoding: .utf8) ?? ""
+        let task = Process()
+        task.executableURL = URL(fileURLWithPath: "/usr/bin/sqlite3")
+        task.arguments = ["-cmd", ".read '\(scriptFile.path)'", "file:\(db)?immutable=1"]
+
+        let stdout = Pipe()
+        let stderr = Pipe()
+        task.standardOutput = stdout
+        task.standardError = stderr
+
+        do {
+            try task.run()
+        } catch {
+            try? FileManager.default.removeItem(at: scriptFile)
+            return []
+        }
+
+        // Read stdout BEFORE waitUntilExit to avoid deadlock.
+        // If output exceeds PIPE buffer (64KB), sqlite3 will block until stdout is consumed.
+        let stdoutData = try? stdout.fileHandleForReading.readDataToEndOfFile()
+        var output = String(data: stdoutData ?? Data(), encoding: .utf8) ?? ""
+
+        task.waitUntilExit()
+        try? FileManager.default.removeItem(at: scriptFile)
+
+        if task.terminationStatus != 0 {
+            let stderrData = try? stderr.fileHandleForReading.readDataToEndOfFile()
+            let stderrMsg = String(data: stderrData ?? Data(), encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            os_log("sqlite3 terminated with status %ld: %s", type: .error, task.terminationStatus, stderrMsg)
+            return []
+        }
+
+        if output.hasSuffix("\n") {
+            output = String(output.dropLast())
+        }
         return output
             .split(separator: "\n", omittingEmptySubsequences: true)
             .map { line in line.split(separator: "\t", omittingEmptySubsequences: false).map(String.init) }
